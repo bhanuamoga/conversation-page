@@ -3,6 +3,10 @@
 import type { UIMessage } from "ai"
 import { User, Bot, Loader2 } from "lucide-react"
 import { MetricCard } from "@/components/analytics/metric-card"
+import { AnalyticsBarChart } from "@/components/analytics/analytics-bar-chart"
+import { AnalyticsLineChart } from "@/components/analytics/analytics-line-chart"
+import { AnalyticsPieChart } from "@/components/analytics/analytics-pie-chart"
+import { AnalyticsDataTable } from "@/components/analytics/analytics-data-table"
 import { SuggestivePrompts } from "./suggestive-prompts"
 
 interface Props {
@@ -64,7 +68,7 @@ export function MessageBubble({
           </p>
         )}
 
-        {/* 🔥 TOOL RESULTS (THIS IS THE MISSING PART) */}
+        {/* TOOL RESULTS - RENDER ALL VISUALIZATION TYPES */}
         {message.parts?.map((part: any, i) => {
           if (part.type !== "tool-result") return null
 
@@ -78,6 +82,86 @@ export function MessageBubble({
               <MetricCard
                 key={i}
                 data={result.cardData}
+              />
+            )
+          }
+
+          /* CHART - Route to correct chart type */
+          if (result.displayType === "chart") {
+            const chartConfig = result.chartConfig
+            if (!chartConfig) return null
+
+            const chartType = chartConfig.type
+
+            if (chartType === "bar") {
+              return (
+                <AnalyticsBarChart
+                  key={i}
+                  data={{
+                    type: "bar_chart",
+                    title: chartConfig.options?.plugins?.title?.text || "Chart",
+                    data: chartConfig.data?.datasets?.[0]?.data?.map((val: any, idx: number) => ({
+                      name: chartConfig.data.labels?.[idx] || `Item ${idx + 1}`,
+                      value: val,
+                    })) || [],
+                    dataKeys: ["value"],
+                    xAxisKey: "name",
+                  }}
+                />
+              )
+            }
+
+            if (chartType === "line") {
+              return (
+                <AnalyticsLineChart
+                  key={i}
+                  data={{
+                    type: "line_chart",
+                    title: chartConfig.options?.plugins?.title?.text || "Chart",
+                    data: chartConfig.data?.datasets?.[0]?.data?.map((val: any, idx: number) => ({
+                      name: chartConfig.data.labels?.[idx] || `Item ${idx + 1}`,
+                      value: val,
+                    })) || [],
+                    dataKeys: ["value"],
+                    xAxisKey: "name",
+                  }}
+                />
+              )
+            }
+
+            if (chartType === "pie" || chartType === "doughnut") {
+              return (
+                <AnalyticsPieChart
+                  key={i}
+                  data={{
+                    type: "pie_chart",
+                    title: chartConfig.options?.plugins?.title?.text || "Chart",
+                    data: chartConfig.data?.labels?.map((label: string, idx: number) => ({
+                      name: label,
+                      value: chartConfig.data.datasets?.[0]?.data?.[idx] || 0,
+                    })) || [],
+                  }}
+                />
+              )
+            }
+          }
+
+          /* TABLE */
+          if (result.displayType === "table") {
+            const tableData = result.tableData
+            if (!tableData) return null
+
+            return (
+              <AnalyticsDataTable
+                key={i}
+                data={{
+                  type: "data_table",
+                  title: tableData.title || "Table",
+                  headers: tableData.columns?.map((col: any) => col.header) || [],
+                  rows: tableData.rows?.map((row: any) => 
+                    tableData.columns?.map((col: any) => String(row[col.key] || "")) || []
+                  ) || [],
+                }}
               />
             )
           }
