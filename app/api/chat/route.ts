@@ -13,6 +13,13 @@ export const maxDuration = 160
 
 const MODEL = process.env.AI_MODEL ?? "openai/gpt-4o"
 
+// Use custom AI Gateway API key from .env.local
+const customHeaders = process.env.AI_GATEWAY_API_KEY
+  ? {
+      "Authorization": `Bearer ${process.env.AI_GATEWAY_API_KEY}`,
+    }
+  : {}
+
 const SYSTEM_PROMPT = `You are a Senior WooCommerce Business Analyst and Pro AI Assistant.
 Your mission is to convert WooCommerce data into clear visualizations and actionable business insights.
 
@@ -265,6 +272,7 @@ export async function POST(req: Request) {
     messages: await convertToModelMessages(messages),
     tools: wooTools,
     stopWhen: stepCountIs(8),
+    headers: customHeaders,
   })
 
   return result.toUIMessageStreamResponse()
